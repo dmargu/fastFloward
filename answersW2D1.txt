@@ -1,0 +1,24 @@
+Area 1:
+
+var a: read and write scope is all
+var b: read scope is all, write scope is current and inner scope
+var c: read scope is anything in the contract, write scope is current and inner
+var d: read and write scope is current and inner
+
+publicFunc: all
+privateFunc: current and inner
+contractFunc: can be called anywhere in the contract
+
+Area 2:
+
+var e: read and write scope is all
+resourceFunc: can be called anywhere
+
+Area 3:
+
+questsAreFun: can be called anywhere
+
+Area 4:
+
+main: script can be called anywhere
+
