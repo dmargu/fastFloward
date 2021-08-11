@@ -1,0 +1,84 @@
+My transaction:
+
+import KittyItems from Project.KittyItems
+
+transaction(itemID: UInt64) {
+
+    let signerCollectionRef: &KittyItems.Collection    
+
+    prepare(signer: AuthAccount) {
+        // 1) borrow a reference to the signer's Kitty Items Collection
+        self.signerCollectionRef = signer.borrow<&KittyItems.Collection>(from: KittyItems.CollectionStoragePath)
+            ?? panic("Couldn't borrow signer reference.")
+    }
+    
+    execute {
+        let nft <- self.signerCollectionRef.withdraw(withdrawID: itemID)
+        
+        destroy nft
+    }
+}
+
+My action card:
+
+<action-card title="CUSTOM: Destroy a Kitty Items Collection"
+    description="Delete an NFT from the account's collection, how fun!" action="kittyDestroyItem"
+    method="post" fields="signer itemID">
+    <account-widget field="signer" label="Signer"></account-widget>
+    <text-widget field="itemID" label="Item ID" placeholder="0"></text-widget>
+</action-card>
+
+dapp-lib function:
+
+static async kittyDestroyItem(data) {
+
+    let result = await Blockchain.post({
+      config: DappLib.getConfig(),
+      roles: {
+        proposer: data.signer
+      }
+    },
+      'kittyitems_destroy_kitty_item',
+      {
+        itemID: { value: parseInt(data.itemID), type: t.UInt64 }
+      }
+    );
+
+    return {
+      type: DappLib.DAPP_RESULT_TX_HASH,
+      label: 'Transaction Hash',
+      result: result.callData.transactionId
+    }
+
+}
+
+test:
+
+it(`checks that an NFT can be deleted from a collection`, async () => {
+            
+    let testData1 = {
+        recipient: config.accounts[0],
+        typeID: "20"
+    }
+    let testData2 = {
+        signer: config.accounts[0],
+        itemID: "20"
+    }
+
+    let testData3 = {
+        address: config.accounts[0]
+    }
+
+    await DappLib.kittyItemsMintKittyItem(testData1)
+
+    let res1 = await DappLib.kittyItemsReadCollectionLength(testData3)
+    console.log(res1)
+
+    await DappLib.kittyDestroyItem(testData2)
+
+    let res2 = await DappLib.kittyItemsReadCollectionLength(testData3)
+    console.log(res2)
+
+    assert.equal(res1.result, 1, "one nft should be minted")
+    assert.equal(res2.result, 0, "the nft should have been deleted")
+})
